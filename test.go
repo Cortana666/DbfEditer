@@ -18,8 +18,8 @@ type modelHandler struct {
 	lines       int
 }
 
-func newModelHandler() *modelHandler {
-	dbf, _ := dbf.OpenFile("/Users/yangjian/Desktop/单考数据-8人.dbf", new(dbf.UTF8Decoder))
+func newModelHandler(filename string) *modelHandler {
+	dbf, _ := dbf.OpenFile(filename, new(dbf.UTF8Decoder))
 
 	m := new(modelHandler)
 	m.dbfresource = dbf
@@ -60,50 +60,69 @@ func (mh *modelHandler) CellValue(m *ui.TableModel, row, column int) ui.TableVal
 func setupUI() {
 	mainwin := ui.NewWindow("libui Control Gallery", 640, 480, true)
 
-	mh := newModelHandler()
-	model := ui.NewTableModel(mh)
-
-	table := ui.NewTable(&ui.TableParams{
-		Model:                         model,
-		RowBackgroundColorModelColumn: 3,
-	})
-	mainwin.SetChild(table)
+	tab := ui.NewTab()
+	mainwin.SetChild(tab)
 	mainwin.SetMargined(true)
+	hbox := ui.NewHorizontalBox()
+	hbox.SetPadded(true)
+	vbox := ui.NewVerticalBox()
+	vbox.SetPadded(true)
+	hbox.Append(vbox, false)
+	grid := ui.NewGrid()
+	grid.SetPadded(true)
+	vbox.Append(grid, false)
+	button := ui.NewButton("打开文件")
+	entry := ui.NewEntry()
+	entry.SetReadOnly(true)
+	button.OnClicked(func(*ui.Button) {
+		filename := ui.OpenFile(mainwin)
+		if filename == "" {
+			filename = "(cancelled)"
+		} else {
+			mh := newModelHandler(filename)
+			model := ui.NewTableModel(mh)
 
-	for key, name := range mh.tabletitle {
-		table.AppendTextColumn(name, key, ui.TableModelColumnAlwaysEditable, nil)
-	}
+			table := ui.NewTable(&ui.TableParams{
+				Model:                         model,
+				RowBackgroundColorModelColumn: 3,
+			})
+			mainwin.SetChild(table)
+			mainwin.SetMargined(true)
 
-	// tab := ui.NewTab()
-	// mainwin.SetChild(tab)
-	// mainwin.SetMargined(true)
-	// hbox := ui.NewHorizontalBox()
-	// hbox.SetPadded(true)
-	// vbox := ui.NewVerticalBox()
-	// vbox.SetPadded(true)
-	// hbox.Append(vbox, false)
-	// grid := ui.NewGrid()
-	// grid.SetPadded(true)
-	// vbox.Append(grid, false)
-	// button := ui.NewButton("Open File")
-	// entry := ui.NewEntry()
-	// entry.SetReadOnly(true)
-	// button.OnClicked(func(*ui.Button) {
-	// 	filename := ui.OpenFile(mainwin)
-	// 	if filename == "" {
-	// 		filename = "(cancelled)"
-	// 	}
-	// 	entry.SetText(filename)
+			for key, name := range mh.tabletitle {
+				table.AppendTextColumn(name, key, ui.TableModelColumnAlwaysEditable, nil)
+			}
+
+			// tab.Append("Numbers and Lists", table)
+			// tab.SetMargined(1, true)
+
+			mainwin.Show()
+		}
+		entry.SetText(filename)
+	})
+	grid.Append(button,
+		0, 0, 1, 1,
+		false, ui.AlignFill, false, ui.AlignFill)
+	grid.Append(entry,
+		1, 0, 1, 1,
+		true, ui.AlignFill, false, ui.AlignFill)
+
+	tab.Append("选择文件", hbox)
+	tab.SetMargined(0, true)
+
+	// mh := newModelHandler()
+	// model := ui.NewTableModel(mh)
+
+	// table := ui.NewTable(&ui.TableParams{
+	// 	Model:                         model,
+	// 	RowBackgroundColorModelColumn: 3,
 	// })
-	// grid.Append(button,
-	// 	0, 0, 1, 1,
-	// 	false, ui.AlignFill, false, ui.AlignFill)
-	// grid.Append(entry,
-	// 	1, 0, 1, 1,
-	// 	true, ui.AlignFill, false, ui.AlignFill)
+	// mainwin.SetChild(table)
+	// mainwin.SetMargined(true)
 
-	// tab.Append("Data Choosers", hbox)
-	// tab.SetMargined(0, true)
+	// for key, name := range mh.tabletitle {
+	// 	table.AppendTextColumn(name, key, ui.TableModelColumnAlwaysEditable, nil)
+	// }
 
 	// tab.Append("Numbers and Lists", table)
 	// tab.SetMargined(1, true)
@@ -112,7 +131,7 @@ func setupUI() {
 
 	mainwin.OnClosing(func(*ui.Window) bool {
 		ui.Quit()
-		mh.dbfresource.Close()
+		// mh.dbfresource.Close()
 		return true
 	})
 	ui.OnShouldQuit(func() bool {
