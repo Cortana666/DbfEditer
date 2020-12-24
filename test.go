@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/SebastiaanKlippert/go-foxpro-dbf"
 	"github.com/andlabs/ui"
 	_ "github.com/andlabs/ui/winmanifest"
+	"github.com/tadvi/dbf"
 
 	"fmt"
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -13,18 +13,19 @@ import (
 )
 
 type modelHandler struct {
-	dbfresource *dbf.DBF
-	tabletitle  []string
+	dbfresource *dbf.DbfTable
+	tabletitle  []dbf.DbfField
 	lines       int
 }
 
 func newModelHandler(filename string) *modelHandler {
-	dbf, _ := dbf.OpenFile(filename, new(dbf.UTF8Decoder))
+	dbf, _ := dbf.LoadFile(filename)
 
 	m := new(modelHandler)
 	m.dbfresource = dbf
-	m.tabletitle = dbf.FieldNames()
+	m.tabletitle = dbf.Fields()
 	m.lines = int(dbf.NumRecords())
+
 	return m
 }
 
@@ -37,24 +38,16 @@ func (mh *modelHandler) SetCellValue(m *ui.TableModel, row, column int, value ui
 }
 
 func (mh *modelHandler) NumRows(m *ui.TableModel) int {
+	fmt.Println(m)
 	return mh.lines
 }
 
 func (mh *modelHandler) CellValue(m *ui.TableModel, row, column int) ui.TableValue {
-	mh.dbfresource.GoTo(uint32(row))
-	deleted, _ := mh.dbfresource.Deleted()
-	if deleted {
-		return ui.TableString("Deleted")
-	}
-	field, _ := mh.dbfresource.Field(column)
-	if field == nil {
-		field = ""
-	}
+	field := mh.dbfresource.FieldValue(row, column)
 
-	I := strings.NewReader(field.(string))
-	O := transform.NewReader(I, simplifiedchinese.GBK.NewDecoder())
-	d, _ := ioutil.ReadAll(O)
-	return ui.TableString(d)
+	value, _ := ioutil.ReadAll(transform.NewReader(strings.NewReader(field), simplifiedchinese.GBK.NewDecoder()))
+
+	return ui.TableString(value)
 }
 
 func setupUI() {
@@ -88,9 +81,8 @@ func setupUI() {
 			})
 			mainwin.SetChild(table)
 			mainwin.SetMargined(true)
-
 			for key, name := range mh.tabletitle {
-				table.AppendTextColumn(name, key, ui.TableModelColumnAlwaysEditable, nil)
+				table.AppendTextColumn(name.Name, key, ui.TableModelColumnAlwaysEditable, nil)
 			}
 
 			// tab.Append("Numbers and Lists", table)
