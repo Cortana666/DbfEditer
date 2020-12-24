@@ -16,6 +16,7 @@ type modelHandler struct {
 	dbfresource *dbf.DbfTable
 	tabletitle  []dbf.DbfField
 	lines       int
+	filename    string
 }
 
 func newModelHandler(filename string) *modelHandler {
@@ -25,6 +26,7 @@ func newModelHandler(filename string) *modelHandler {
 	m.dbfresource = dbf
 	m.tabletitle = dbf.Fields()
 	m.lines = int(dbf.NumRecords())
+	m.filename = filename
 
 	return m
 }
@@ -34,6 +36,8 @@ func (mh *modelHandler) ColumnTypes(m *ui.TableModel) []ui.TableValue {
 }
 
 func (mh *modelHandler) SetCellValue(m *ui.TableModel, row, column int, value ui.TableValue) {
+	mh.dbfresource.SetFieldValue(row, column, string(value.(ui.TableString)))
+	mh.dbfresource.SaveFile(mh.filename)
 
 }
 
@@ -67,7 +71,7 @@ func setupUI() {
 			model := ui.NewTableModel(mh)
 			table := ui.NewTable(&ui.TableParams{
 				Model:                         model,
-				RowBackgroundColorModelColumn: 3,
+				RowBackgroundColorModelColumn: -1,
 			})
 
 			for key, name := range mh.tabletitle {
