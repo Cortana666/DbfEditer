@@ -35,23 +35,37 @@ func (mh *modelHandler) ColumnTypes(m *ui.TableModel) []ui.TableValue {
 	return []ui.TableValue{}
 }
 
-func (mh *modelHandler) SetCellValue(m *ui.TableModel, row, column int, value ui.TableValue) {
-	mh.dbfresource.SetFieldValue(row, column, string(value.(ui.TableString)))
-	mh.dbfresource.SaveFile(mh.filename)
-
-}
-
 func (mh *modelHandler) NumRows(m *ui.TableModel) int {
 	fmt.Println(m)
 	return mh.lines
 }
 
 func (mh *modelHandler) CellValue(m *ui.TableModel, row, column int) ui.TableValue {
+	if mh.dbfresource.IsDeleted(row) {
+		return ui.TableString("Deleted")
+	}
+
+	if column == -1 {
+		return ui.TableString("删除")
+	}
+
 	field := mh.dbfresource.FieldValue(row, column)
 
 	value, _ := ioutil.ReadAll(transform.NewReader(strings.NewReader(field), simplifiedchinese.GBK.NewDecoder()))
 
 	return ui.TableString(value)
+}
+
+func (mh *modelHandler) SetCellValue(m *ui.TableModel, row, column int, value ui.TableValue) {
+	if column == -1 {
+		mh.dbfresource.Delete(row)
+		mh.dbfresource.SaveFile(mh.filename)
+		m.RowDeleted(row)
+	} else {
+		mh.dbfresource.SetFieldValue(row, column, string(value.(ui.TableString)))
+		mh.dbfresource.SaveFile(mh.filename)
+	}
+
 }
 
 func setupUI() {
@@ -74,6 +88,7 @@ func setupUI() {
 				RowBackgroundColorModelColumn: -1,
 			})
 
+			table.AppendButtonColumn("操作", -1, ui.TableModelColumnAlwaysEditable)
 			for key, name := range mh.tabletitle {
 				table.AppendTextColumn(name.Name, key, ui.TableModelColumnAlwaysEditable, nil)
 			}
