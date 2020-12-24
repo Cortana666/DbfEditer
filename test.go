@@ -51,83 +51,41 @@ func (mh *modelHandler) CellValue(m *ui.TableModel, row, column int) ui.TableVal
 }
 
 func setupUI() {
-	mainwin := ui.NewWindow("libui Control Gallery", 640, 480, true)
 
-	tab := ui.NewTab()
-	mainwin.SetChild(tab)
-	mainwin.SetMargined(true)
-	hbox := ui.NewHorizontalBox()
-	hbox.SetPadded(true)
-	vbox := ui.NewVerticalBox()
-	vbox.SetPadded(true)
-	hbox.Append(vbox, false)
-	grid := ui.NewGrid()
-	grid.SetPadded(true)
-	vbox.Append(grid, false)
+	box := ui.NewVerticalBox()
 	button := ui.NewButton("打开文件")
-	entry := ui.NewEntry()
-	entry.SetReadOnly(true)
+	box.Append(button, false)
+
+	window := ui.NewWindow("DbfEditer", 1024, 768, true)
+	window.SetMargined(true)
+	window.SetChild(box)
+
 	button.OnClicked(func(*ui.Button) {
-		filename := ui.OpenFile(mainwin)
-		if filename == "" {
-			filename = "(cancelled)"
-		} else {
+		filename := ui.OpenFile(window)
+		if filename != "" {
 			mh := newModelHandler(filename)
 			model := ui.NewTableModel(mh)
-
 			table := ui.NewTable(&ui.TableParams{
 				Model:                         model,
 				RowBackgroundColorModelColumn: 3,
 			})
-			mainwin.SetChild(table)
-			mainwin.SetMargined(true)
+
 			for key, name := range mh.tabletitle {
 				table.AppendTextColumn(name.Name, key, ui.TableModelColumnAlwaysEditable, nil)
 			}
 
-			// tab.Append("Numbers and Lists", table)
-			// tab.SetMargined(1, true)
-
-			mainwin.Show()
+			window.SetChild(table)
 		}
-		entry.SetText(filename)
 	})
-	grid.Append(button,
-		0, 0, 1, 1,
-		false, ui.AlignFill, false, ui.AlignFill)
-	grid.Append(entry,
-		1, 0, 1, 1,
-		true, ui.AlignFill, false, ui.AlignFill)
 
-	tab.Append("选择文件", hbox)
-	tab.SetMargined(0, true)
+	window.Show()
 
-	// mh := newModelHandler()
-	// model := ui.NewTableModel(mh)
-
-	// table := ui.NewTable(&ui.TableParams{
-	// 	Model:                         model,
-	// 	RowBackgroundColorModelColumn: 3,
-	// })
-	// mainwin.SetChild(table)
-	// mainwin.SetMargined(true)
-
-	// for key, name := range mh.tabletitle {
-	// 	table.AppendTextColumn(name, key, ui.TableModelColumnAlwaysEditable, nil)
-	// }
-
-	// tab.Append("Numbers and Lists", table)
-	// tab.SetMargined(1, true)
-
-	mainwin.Show()
-
-	mainwin.OnClosing(func(*ui.Window) bool {
+	window.OnClosing(func(*ui.Window) bool {
 		ui.Quit()
-		// mh.dbfresource.Close()
 		return true
 	})
 	ui.OnShouldQuit(func() bool {
-		mainwin.Destroy()
+		window.Destroy()
 		return true
 	})
 }
