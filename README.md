@@ -11,5 +11,5 @@ golang实现的dbf文件编辑器
 3、增加一行数据
 
 用到的第三方包
-github.com/andlabs/ui
-github.com/tadvi/dbf
+1、github.com/andlabs/ui
+2、github.com/tadvi/dbf
